@@ -1,0 +1,43 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: go_api_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: go_api_db
+      MYSQL_USER: api_user
+      MYSQL_PASSWORD: mysql
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - go_api_network
+
+  mysql-test:
+    image: mysql:8.0
+    container_name: go_api_mysql_test
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: go_api_db_test
+      MYSQL_USER: api_user
+      MYSQL_PASSWORD: mysql
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data_test:/var/lib/mysql
+    networks:
+      - go_api_network
+
+volumes:
+  mysql_data:
+    driver: local
+  mysql_data_test:
+    driver: local
+
+networks:
+  go_api_network:
+    driver: bridge
