@@ -73,10 +73,6 @@ func main() {
 	}
 	defer func() { _ = tp.Shutdown(context.Background()) }()
 
-	db, err = mysqlrepo.OpenDatabase(nil)
-	if err != nil {
-		log.Fatal(err)
-	}
 	// instrument GORM (create spans for queries)
 	_ = db.Use(otelgorm.NewPlugin())
 	app.Use(otelfiber.Middleware())

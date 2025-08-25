@@ -7,10 +7,11 @@ SWAG := $(shell go env GOPATH)/bin/swag
         ps up down \
         migrate migrate-test \
         seed seed-test \
-        swag
+        swag \
+		obs-up obs-down
 
 run:
-	go run $(PKG)
+	OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 go run $(PKG)
 
 build:
 	mkdir -p bin
@@ -59,3 +60,9 @@ test-one:
 show-test-coverage:
 	go tool cover -html=coverage.out -o coverage.html
 	open coverage.html
+
+obs-up:
+	docker-compose up -d jaeger prometheus grafana
+
+obs-down:
+	docker-compose down jaeger prometheus grafana || true
