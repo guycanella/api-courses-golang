@@ -26,6 +26,8 @@ import (
 	swagger "github.com/gofiber/swagger"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
 )
 
 func main() {
@@ -38,6 +40,18 @@ func main() {
 	}
 
 	app := fiber.New()
+	app.Use(requestid.New())
+	app.Use(logger.New(logger.Config{
+		Format: `{
+			"ts":"${time}",
+			"ip":"${ip}",
+			"method":"${method}",
+			"path":"${path}",
+			"status":${status},
+			"latency":"${latency}",
+			"request_id":"${locals:requestid}"
+		}`,
+	}))
 
 	h := handlers.NewCoursesHandler(db)
 
