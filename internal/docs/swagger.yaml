@@ -1,0 +1,207 @@
+basePath: /
+definitions:
+  domain.Course:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      title:
+        type: string
+    type: object
+  handlers.CourseDoc:
+    properties:
+      created_at:
+        example: "2025-08-20T15:04:05Z"
+        type: string
+      description:
+        example: Curso introdutório de Go
+        type: string
+      id:
+        example: 4e70d7c4-5f5b-4f5a-9c9f-0e0b4a7c0d18
+        type: string
+      title:
+        example: Go para Iniciantes
+        type: string
+    type: object
+  handlers.CourseResponse:
+    properties:
+      course:
+        $ref: '#/definitions/domain.Course'
+    type: object
+  handlers.CoursesResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/handlers.CourseDoc'
+        type: array
+      limit:
+        example: 10
+        type: integer
+      page:
+        example: 1
+        type: integer
+      total:
+        example: 42
+        type: integer
+    type: object
+  handlers.CreateCourseDTO:
+    properties:
+      description:
+        example: Alguma descrição
+        type: string
+      title:
+        example: Curso de React
+        type: string
+    type: object
+  handlers.CreatedIDResponse:
+    properties:
+      courseId:
+        example: 4e70d7c4-5f5b-4f5a-9c9f-0e0b4a7c0d18
+        type: string
+    type: object
+  handlers.ErrorResponse:
+    properties:
+      error:
+        example: internal server error
+        type: string
+    type: object
+  handlers.ValidationErrorResponse:
+    properties:
+      errors:
+        additionalProperties:
+          type: string
+        example:
+          '{"title"': '"is required"}'
+        type: object
+    type: object
+host: localhost:3333
+info:
+  contact:
+    email: guycanella@gmail.com
+    name: Guilherme Arantes Canella
+    url: https://github.com/guycanella
+  description: API to manage courses, users and enrollments
+  title: Go API Courses
+  version: "1.0"
+paths:
+  /courses:
+    get:
+      consumes:
+      - application/json
+      description: Returns paginated courses, with optional search by title.
+      parameters:
+      - default: 1
+        description: Page (>=1)
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page [1..100]
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - description: Title fragment (2..100)
+        in: query
+        maxLength: 100
+        minLength: 2
+        name: q
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.CoursesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Get courses
+      tags:
+      - courses
+    post:
+      consumes:
+      - application/json
+      description: Creates a course and returns only the courseId and the Location
+        header.
+      parameters:
+      - description: New course
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateCourseDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.CreatedIDResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/handlers.ValidationErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Create course
+      tags:
+      - courses
+  /courses/{courseId}:
+    get:
+      parameters:
+      - description: Course ID
+        format: uuid
+        in: path
+        name: courseId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.CourseResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Get course by ID
+      tags:
+      - courses
+schemes:
+- http
+swagger: "2.0"
+tags:
+- description: Operations on courses
+  name: courses
