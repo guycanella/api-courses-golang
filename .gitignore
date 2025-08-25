@@ -1,0 +1,12 @@
+bin/
+*.exe
+*.test
+*.out
+*.log
+*.cache/
+vendor/
+# macOS
+.DS_Store
+# IDEs
+.vscode/
+.idea/
