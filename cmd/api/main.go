@@ -23,6 +23,7 @@ import (
 	_ "github.com/guycanella/api-courses-golang/internal/docs"
 	mysqlrepo "github.com/guycanella/api-courses-golang/internal/repository/mysql"
 
+	fiberprometheus "github.com/ansrivas/fiberprometheus/v2"
 	swagger "github.com/gofiber/swagger"
 
 	"github.com/gofiber/fiber/v2"
@@ -40,6 +41,10 @@ func main() {
 	}
 
 	app := fiber.New()
+	fp := fiberprometheus.New("api-courses-golang")
+	fp.RegisterAt(app, "/metrics")
+	app.Use(fp.Middleware)
+
 	app.Use(requestid.New())
 	app.Use(logger.New(logger.Config{
 		Format: `{

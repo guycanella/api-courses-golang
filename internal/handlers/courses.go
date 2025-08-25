@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/guycanella/api-courses-golang/internal/domain"
 	"github.com/guycanella/api-courses-golang/internal/httpx"
+	"github.com/guycanella/api-courses-golang/internal/metrics"
 	"gorm.io/gorm"
 )
 
@@ -198,6 +199,7 @@ func (handler *CoursesHandler) CreateCourse(ctx *fiber.Ctx) error {
 	}
 
 	ctx.Location("/courses/" + course.ID)
+	metrics.CoursesCreatedTotal.Inc()
 	return ctx.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"courseId": course.ID,
 	})
