@@ -1,6 +1,8 @@
 bin/
+migrate
 *.exe
 *.test
+*.html
 *.out
 *.log
 *.cache/
