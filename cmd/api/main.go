@@ -14,6 +14,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -29,6 +30,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
+
+	"github.com/gofiber/contrib/otelfiber"
+	"github.com/guycanella/api-courses-golang/internal/obs"
+	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 )
 
 func main() {
@@ -41,10 +46,13 @@ func main() {
 	}
 
 	app := fiber.New()
+
+	// enable metrics
 	fp := fiberprometheus.New("api-courses-golang")
 	fp.RegisterAt(app, "/metrics")
 	app.Use(fp.Middleware)
 
+	// enable request id and logger
 	app.Use(requestid.New())
 	app.Use(logger.New(logger.Config{
 		Format: `{
@@ -58,6 +66,22 @@ func main() {
 		}`,
 	}))
 
+	// enable tracing
+	tp, err := obs.InitTracer(context.Background(), "api-courses-golang")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() { _ = tp.Shutdown(context.Background()) }()
+
+	db, err = mysqlrepo.OpenDatabase(nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// instrument GORM (create spans for queries)
+	_ = db.Use(otelgorm.NewPlugin())
+	app.Use(otelfiber.Middleware())
+
+	// enable routes
 	h := handlers.NewCoursesHandler(db)
 
 	app.Get("/courses", h.ListCourses)
