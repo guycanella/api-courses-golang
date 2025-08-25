@@ -19,6 +19,12 @@ A REST API built with Go for managing courses, users, and enrollments. This proj
 - **testify** - Testing toolkit
 - **MySQL Test Database** - Separate database for testing
 
+### Observability
+- **Prometheus** - Metrics collection and monitoring
+- **Grafana** - Metrics visualization and dashboards
+- **Jaeger** - Distributed tracing and performance monitoring
+- **OpenTelemetry** - Observability framework for tracing instrumentation
+
 ### Documentation
 - **Swagger/OpenAPI** - API documentation
 - **Fiber Swagger middleware** - API docs serving
@@ -147,6 +153,179 @@ Content-Type: application/json
 }
 ```
 
+## 📊 Observability
+
+The application includes comprehensive observability features with the three pillars: **Metrics**, **Logs**, and **Traces**.
+
+### 🔍 Monitoring Stack
+
+```mermaid
+graph TB
+    API["🚀 Go API<br/>(Port 3333)"]
+    PROM["📊 Prometheus<br/>(Port 9090)"]
+    GRAF["📈 Grafana<br/>(Port 3000)"]
+    JAEG["🔍 Jaeger<br/>(Port 16686)"]
+    
+    API -->|"/metrics endpoint"| PROM
+    API -->|"OTLP traces"| JAEG
+    PROM -->|"Data source"| GRAF
+    JAEG -->|"Data source"| GRAF
+    
+    subgraph "Observability Stack"
+        PROM
+        GRAF
+        JAEG
+    end
+    
+    subgraph "Application"
+        API
+    end
+```
+
+- **Prometheus**: Metrics collection and storage
+- **Grafana**: Metrics visualization and alerting  
+- **Jaeger**: Distributed tracing and performance analysis
+- **OpenTelemetry**: Standardized observability instrumentation
+
+### 📈 Metrics (Prometheus)
+
+The API exposes Prometheus metrics at `/metrics` endpoint for monitoring and alerting.
+
+#### Built-in Metrics
+- **HTTP Request Metrics**: Duration, status codes, request counts per endpoint
+- **Application Metrics**: Custom business metrics (e.g., courses created)
+- **Go Runtime Metrics**: Memory usage, goroutines, GC statistics
+
+#### Custom Metrics
+- `total_created_courses`: Counter tracking successful course creations
+
+#### Access Prometheus
+```bash
+# Prometheus UI (after running docker-compose up)
+http://localhost:9090
+```
+
+![Prometheus Interface](docs/images/prometheus-overview.png)
+*Prometheus main interface showing available metrics*
+
+#### Example Queries
+```promql
+# Request rate per endpoint
+rate(http_requests_total[5m])
+
+# 95th percentile response time
+histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+
+# Total courses created
+total_created_courses
+```
+
+### 📊 Visualization (Grafana)
+
+Grafana provides rich dashboards for metrics visualization and alerting.
+
+#### Access Grafana
+```bash
+# Grafana UI (after running docker-compose up)
+http://localhost:3000
+
+# Default credentials
+Username: admin
+Password: admin
+```
+
+#### Pre-configured Data Sources
+- **Prometheus**: `http://prometheus:9090`
+- **Jaeger**: `http://jaeger:16686`
+
+![Grafana Dashboard](docs/images/grafana-dashboard.png)
+*Example API performance dashboard in Grafana*
+
+#### Dashboard Examples
+- API Performance Dashboard (request rates, latencies, error rates)
+- Business Metrics Dashboard (course creation trends)
+- Infrastructure Dashboard (Go runtime metrics)
+
+### 🔗 Distributed Tracing (Jaeger)
+
+OpenTelemetry integration provides distributed tracing for request flows and performance analysis.
+
+#### Features
+- **Request Tracing**: Full request lifecycle tracking
+- **Database Instrumentation**: Automatic GORM query tracing
+- **Performance Analysis**: Latency breakdown and bottleneck identification
+- **Service Dependencies**: Visual service interaction mapping
+
+#### Access Jaeger
+```bash
+# Jaeger UI (after running docker-compose up)
+http://localhost:16686
+```
+
+#### Trace Information
+- HTTP request spans with status codes and duration
+- Database query spans with SQL statements and execution time
+- Custom spans for business logic
+- Request correlation via trace IDs
+
+![Jaeger Trace Details](docs/images/jaeger-trace-detail.png)
+*Detailed trace view showing HTTP request and database spans*
+
+### ⚙️ Configuration
+
+#### Environment Variables
+```bash
+# OpenTelemetry Configuration
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+
+# Application Configuration  
+APP_DEBUG=true                    # Enable debug logging
+```
+
+#### Instrumentation
+The application automatically instruments:
+- **HTTP Requests**: Using `otelfiber` middleware
+- **Database Queries**: Using `otelgorm` plugin  
+- **Custom Metrics**: Using Prometheus client libraries
+
+### 🚀 Getting Started with Observability
+
+1. **Start observability stack**:
+```bash
+# Start all services including Prometheus, Grafana, and Jaeger
+make up
+```
+
+2. **Generate some traffic**:
+```bash
+# Make some API requests to generate metrics and traces
+curl http://localhost:3333/courses
+curl -X POST http://localhost:3333/courses \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test Course","description":"Test Description"}'
+```
+
+3. **Explore metrics in Prometheus**:
+   - Visit http://localhost:9090
+   - Try queries like `http_requests_total` or `total_created_courses`
+
+4. **View traces in Jaeger**:
+   - Visit http://localhost:16686
+   - Select service `api-courses-golang` and click "Find Traces"
+
+5. **Create dashboards in Grafana**:
+   - Visit http://localhost:3000 (admin/admin)
+   - Add Prometheus data source: http://prometheus:9090
+   - Import or create custom dashboards
+
+### 📋 Monitoring Best Practices
+
+- **Golden Signals**: Monitor latency, traffic, errors, and saturation
+- **Business Metrics**: Track domain-specific KPIs (courses created, user activity)
+- **Alerting**: Set up alerts for error rates and performance degradation
+- **Trace Sampling**: Configure appropriate sampling rates for production
+- **Retention**: Configure data retention policies for metrics and traces
+
 ## 🧪 Testing
 
 The project includes comprehensive unit and integration tests.
@@ -237,6 +416,15 @@ APP_PORT=3333        # API server port
 APP_DEBUG=true       # Enable debug mode
 ```
 
+### Observability Configuration
+```bash
+# OpenTelemetry Tracing
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318  # Jaeger OTLP endpoint
+
+# Metrics are automatically exposed at /metrics endpoint
+# Prometheus scrapes from http://localhost:3333/metrics
+```
+
 ## 🐳 Docker Setup
 
 The project uses Docker Compose for local development:
@@ -244,6 +432,9 @@ The project uses Docker Compose for local development:
 ### Services
 - **mysql**: Development database (port 3306)
 - **mysql-test**: Test database (port 3307)
+- **prometheus**: Metrics collection and monitoring (port 9090)
+- **grafana**: Metrics visualization and dashboards (port 3000)
+- **jaeger**: Distributed tracing and performance monitoring (port 16686)
 
 ### Docker Commands
 ```bash
